@@ -33,7 +33,7 @@ socket.on('killed', () => {
     localPlayer.x = Math.random() * canvas.width
     localPlayer.y = Math.random() * canvas.height
     socket.emit('new player', localPlayer)
-  }, 3000) // Respawn after 3 seconds
+  }, 3000)
 })
 
 function update() {
@@ -55,17 +55,14 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Draw players
   for (let id in players) {
     const player = players[id]
     if (player.dead) {
-      // Draw blood splatter for dead players
       ctx.fillStyle = 'red'
       ctx.beginPath()
       ctx.arc(player.x, player.y, 20, 0, Math.PI * 2)
       ctx.fill()
     } else {
-      // Draw alive players
       ctx.fillStyle = player.color
       ctx.beginPath()
       ctx.arc(player.x, player.y, 20, 0, Math.PI * 2)
@@ -75,12 +72,10 @@ function draw() {
       ctx.translate(player.x, player.y)
       ctx.rotate(player.angle)
       ctx.fillStyle = 'black'
-      ctx.fillRect(15, -5, 20, 10) // Draw gun
+      ctx.fillRect(15, -5, 20, 10)
       ctx.restore()
     }
   }
-
-  // Draw bullets
   bullets.forEach((bullet) => {
     ctx.fillStyle = 'red'
     ctx.beginPath()

@@ -63,7 +63,7 @@ function respawnPlayer(id) {
 
 function updateBullets() {
   bullets = bullets.filter((bullet) => {
-    const steps = 5 // Number of steps to divide the bullet's movement into for better precision
+    const steps = 5
     const stepX = Math.cos(bullet.angle) * (bullet.speed / steps)
     const stepY = Math.sin(bullet.angle) * (bullet.speed / steps)
 
@@ -71,12 +71,10 @@ function updateBullets() {
       const newX = bullet.x + stepX
       const newY = bullet.y + stepY
 
-      // Update the bullet's position at each step
       bullet.x = newX
       bullet.y = newY
     }
 
-    // Check for collisions with players
     for (let id in players) {
       if (id !== bullet.playerId && !players[id].dead) {
         const player = players[id]
@@ -85,10 +83,9 @@ function updateBullets() {
         const distance = Math.sqrt(dx * dx + dy * dy)
 
         if (distance < 20) {
-          // If the bullet hits the player, mark the player as dead
           players[id].dead = true
           io.to(id).emit('killed')
-          setTimeout(() => respawnPlayer(id), 3000) // Respawn after 3 seconds
+          setTimeout(() => respawnPlayer(id), 3000)
           return false
         }
       }
