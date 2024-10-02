@@ -4,7 +4,7 @@ const ctx = canvas.getContext('2d')
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-const socket = io('http://localhost:3000')
+const socket = io('https://cs2d-ik7j.vercel.app')
 
 let players = {}
 let bullets = []
