@@ -14,6 +14,12 @@ const io = socketIO(server, {
   },
 })
 
+app.use(
+  cors({
+    origin: ['http://127.0.0.1:5501', 'https://cs2d2.netlify.app'], // Allow specific origins
+  })
+)
+
 const players = {}
 let bullets = []
 
