@@ -23,26 +23,6 @@ const io = socketIO(server, {
 const players = {}
 let bullets = []
 
-// Define a simple map with walls (1) and empty spaces (0)
-const map = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-]
-
-const TILE_SIZE = 50 // Size of each tile in pixels
-
 io.on('connection', (socket) => {
   console.log('A user connected')
 
@@ -51,7 +31,9 @@ io.on('connection', (socket) => {
   })
 
   socket.on('update player', (player) => {
-    players[socket.id] = player
+    if (players[socket.id] && !players[socket.id].dead) {
+      players[socket.id] = player
+    }
   })
 
   socket.on('shoot', (bulletData) => {
@@ -71,18 +53,12 @@ io.on('connection', (socket) => {
   })
 })
 
-function isCollidingWithWall(x, y) {
-  const buffer = 1 // Allow a small margin of error
-  const col = Math.floor((x + buffer) / TILE_SIZE)
-  const row = Math.floor((y + buffer) / TILE_SIZE)
-
-  // Check if the row and col are within the bounds of the map
-  if (row >= 0 && row < map.length && col >= 0 && col < map[0].length) {
-    return map[row][col] === 1 // Collision with wall
+function respawnPlayer(id) {
+  if (players[id]) {
+    players[id].x = Math.random() * 1000
+    players[id].y = Math.random() * 1000
+    players[id].dead = false
   }
-
-  // If out of bounds, treat it as no collision (false)
-  return false
 }
 
 function updateBullets() {
@@ -95,39 +71,24 @@ function updateBullets() {
       const newX = bullet.x + stepX
       const newY = bullet.y + stepY
 
-      // Check for collisions with walls at each step
-      if (isCollidingWithWall(newX, newY)) {
-        // If the bullet collides with a wall, remove it
-        return false
-      }
-
       // Update the bullet's position at each step
       bullet.x = newX
       bullet.y = newY
     }
 
-    // Remove bullet if it's out of bounds
-    if (
-      bullet.x < 0 ||
-      bullet.x >= map[0].length * TILE_SIZE ||
-      bullet.y < 0 ||
-      bullet.y >= map.length * TILE_SIZE
-    ) {
-      return false
-    }
-
     // Check for collisions with players
     for (let id in players) {
-      if (id !== bullet.playerId) {
+      if (id !== bullet.playerId && !players[id].dead) {
         const player = players[id]
         const dx = player.x - bullet.x
         const dy = player.y - bullet.y
         const distance = Math.sqrt(dx * dx + dy * dy)
 
         if (distance < 20) {
-          // If the bullet hits the player, remove the player
-          delete players[id]
+          // If the bullet hits the player, mark the player as dead
+          players[id].dead = true
           io.to(id).emit('killed')
+          setTimeout(() => respawnPlayer(id), 3000) // Respawn after 3 seconds
           return false
         }
       }
