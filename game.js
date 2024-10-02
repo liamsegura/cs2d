@@ -4,10 +4,23 @@ const ctx = canvas.getContext('2d')
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-const socket = io('https://cs2d-ik7j.vercel.app')
+const socket = io('https://cs2d.onrender.com')
 
 let players = {}
 let bullets = []
+
+// Define a simple map with walls (1) and empty spaces (0)
+const map = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 0, 1, 1, 0, 1, 1, 0, 0, 1],
+  [1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+  [1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+  [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+]
+
+const TILE_SIZE = 50 // Size of each tile in pixels
 
 const localPlayer = {
   x: Math.random() * canvas.width,
@@ -25,11 +38,21 @@ socket.on('update', (serverPlayers, serverBullets) => {
   bullets = serverBullets
 })
 
+function isCollidingWithWall(x, y) {
+  const col = Math.floor(x / TILE_SIZE)
+  const row = Math.floor(y / TILE_SIZE)
+  return map[row] && map[row][col] === 1
+}
+
 function update() {
-  if (keys.w) localPlayer.y -= 5
-  if (keys.s) localPlayer.y += 5
-  if (keys.a) localPlayer.x -= 5
-  if (keys.d) localPlayer.x += 5
+  if (keys.w && !isCollidingWithWall(localPlayer.x, localPlayer.y - 5))
+    localPlayer.y -= 5
+  if (keys.s && !isCollidingWithWall(localPlayer.x, localPlayer.y + 5))
+    localPlayer.y += 5
+  if (keys.a && !isCollidingWithWall(localPlayer.x - 5, localPlayer.y))
+    localPlayer.x -= 5
+  if (keys.d && !isCollidingWithWall(localPlayer.x + 5, localPlayer.y))
+    localPlayer.x += 5
 
   localPlayer.angle = Math.atan2(
     mouse.y - localPlayer.y,
@@ -42,6 +65,17 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+  // Draw the map
+  for (let row = 0; row < map.length; row++) {
+    for (let col = 0; col < map[row].length; col++) {
+      if (map[row][col] === 1) {
+        ctx.fillStyle = 'gray'
+        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+      }
+    }
+  }
+
+  // Draw players
   for (let id in players) {
     const player = players[id]
     ctx.fillStyle = player.color
@@ -57,6 +91,7 @@ function draw() {
     ctx.restore()
   }
 
+  // Draw bullets
   bullets.forEach((bullet) => {
     ctx.fillStyle = 'red'
     ctx.beginPath()
